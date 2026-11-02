@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#f7f5f0">
+<title>Mesas & Menu</title>
+<style>
+:root{--bg:#f7f5f0;--card:#fff;--ink:#242720;--muted:#77796f;--green:#245b46;--green2:#e8f0eb;--line:#e8e5de;--red:#a33b32;--radius:18px}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;padding-bottom:calc(82px + env(safe-area-inset-bottom))}
+header{padding:calc(18px + env(safe-area-inset-top)) 18px 14px;background:var(--bg);position:sticky;top:0;z-index:5}
+h1{font-size:27px;margin:0;font-weight:750;letter-spacing:-.6px}header p{margin:5px 0 0;color:var(--muted);font-size:13px}
+.tabs{display:flex;gap:7px;margin:16px 18px 0;padding:5px;background:#eae7df;border-radius:14px}
+.tab{border:0;background:transparent;flex:1;padding:11px 5px;border-radius:10px;font-weight:650;color:#696b62;font-size:14px}
+.tab.active{background:#fff;color:var(--green);box-shadow:0 1px 4px #0000000c}
+main{padding:16px 18px;max-width:720px;margin:auto}
+.section-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:4px 0 14px}
+h2{font-size:20px;margin:0;letter-spacing:-.3px}
+h3{font-size:16px;margin:0}
+.btn{border:0;border-radius:12px;background:var(--green);color:white;padding:11px 14px;font-weight:650;font-size:14px}
+.btn.secondary{background:var(--green2);color:var(--green)}
+.btn.ghost{background:#f1eee8;color:#4e5149}
+.btn.danger{background:#f8e9e7;color:var(--red)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:15px;margin-bottom:11px}
+.row{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.muted{color:var(--muted);font-size:13px}
+.pill{display:inline-flex;background:var(--green2);color:var(--green);border-radius:999px;padding:5px 9px;font-size:12px;font-weight:650}
+.category-strip{display:flex;gap:8px;overflow:auto;padding:2px 0 12px}
+.chip{white-space:nowrap;border:1px solid var(--line);background:#fff;padding:9px 13px;border-radius:999px;font-size:13px}
+.chip.active{background:var(--green);color:#fff;border-color:var(--green)}
+.item-name{font-weight:700}
+.price{font-weight:750;color:var(--green);white-space:nowrap}
+.item-desc{font-size:13px;color:var(--muted);margin-top:4px}
+input,select,textarea{width:100%;border:1px solid #ddd9d0;border-radius:12px;padding:12px;background:#fff;font:inherit;color:var(--ink);margin-top:6px}
+label{display:block;font-size:13px;color:var(--muted);margin:12px 0 0}
+textarea{min-height:75px;resize:vertical}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.empty{text-align:center;padding:32px 15px;color:var(--muted)}
+.bottom-nav{position:fixed;bottom:0;left:0;right:0;background:#ffffffed;backdrop-filter:blur(14px);border-top:1px solid var(--line);display:flex;justify-content:space-around;padding:9px 12px calc(9px + env(safe-area-inset-bottom));z-index:10}
+.navitem{border:0;background:transparent;color:#77796f;font-size:11px;font-weight:650;display:flex;flex-direction:column;align-items:center;gap:4px;min-width:65px}
+.navitem span{font-size:21px;line-height:22px}.navitem.active{color:var(--green)}
+.order-line{display:flex;align-items:center;gap:9px;padding:10px 0;border-bottom:1px solid var(--line)}
+.qty{display:flex;align-items:center;gap:8px}.qty button{border:0;background:#f1eee8;border-radius:9px;width:29px;height:29px;font-weight:800}
+.total{font-size:22px;font-weight:800}
+hr{border:0;border-top:1px solid var(--line);margin:13px 0}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+small{color:var(--muted)}
+@media(min-width:600px){main{padding-top:22px}.menu-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.menu-grid .card{margin:0}}
+</style>
+</head>
+<body>
+<header><h1>Mesas & Menu</h1><p>O teu restaurante, organizado.</p>
+<div class="tabs" id="tabs">
+<button class="tab active" data-view="menu">Menu</button><button class="tab" data-view="tables">Mesas</button><button class="tab" data-view="history">Histórico</button>
+</div></header>
+<main id="app"></main>
+<nav class="bottom-nav">
+<button class="navitem active" data-view="menu"><span>☷</span>Menu</button>
+<button class="navitem" data-view="tables"><span>♧</span>Mesas</button>
+<button class="navitem" data-view="history"><span>◷</span>Histórico</button>
+</nav>
+<script>
+const KEY='mesas-menu-v1';
+const initial={categories:['Entradas','Pratos principais','Sobremesas','Bebidas'],items:[],orders:[],tables:12,nextOrder:1};
+let data;try{data=JSON.parse(localStorage.getItem(KEY))||structuredClone(initial)}catch(e){data=structuredClone(initial)}
+let view='menu', selectedCategory='Todas', currentTable=1, cart={}, editingOrder=null;
+function save(){localStorage.setItem(KEY,JSON.stringify(data))}
+function euro(n){return Number(n||0).toLocaleString('pt-PT',{style:'currency',currency:'EUR'})}
+function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function setView(v){view=v;document.querySelectorAll('[data-view]').forEach(x=>x.classList.toggle('active',x.dataset.view===v));render()}
+document.querySelectorAll('[data-view]').forEach(x=>x.addEventListener('click',()=>setView(x.dataset.view)));
+function render(){const app=document.getElementById('app');if(view==='menu')renderMenu(app);if(view==='tables')renderTables(app);if(view==='history')renderHistory(app)}
+function renderMenu(app){
+app.innerHTML=`<div class="section-head"><h2>Menu</h2><button class="btn" onclick="itemForm()">+ Novo item</button></div>
+<div class="section-head"><div><span class="muted">${data.items.length} itens · ${data.categories.length} categorias</span></div><button class="btn secondary" onclick="categoryForm()">Categorias</button></div>
+<div class="category-strip">${['Todas',...data.categories].map(c=>`<button class="chip ${selectedCategory===c?'active':''}" onclick="selectedCategory='${esc(c).replace(/'/g,"\\'")}';render()">${esc(c)}</button>`).join('')}</div>
+<div class="menu-grid">${data.items.filter(i=>selectedCategory==='Todas'||i.category===selectedCategory).map(i=>`<div class="card"><div class="row"><div><div class="item-name">${esc(i.name)}</div><div class="item-desc">${esc(i.category)}${i.description?' · '+esc(i.description):''}</div></div><div class="price">${euro(i.price)}</div></div><div class="actions"><button class="btn ghost" onclick="itemForm('${i.id}')">Editar</button><button class="btn danger" onclick="deleteItem('${i.id}')">Apagar</button></div></div>`).join('')||'<div class="empty">Ainda não tens itens. Adiciona o primeiro prato ou bebida.</div>'}</div>`;
+}
+function categoryForm(){let name=prompt('Nome da nova categoria:');if(!name)return;name=name.trim();if(name&&!data.categories.includes(name)){data.categories.push(name);save();render()}}
+function itemForm(id){let item=data.items.find(x=>x.id===id)||{name:'',category:data.categories[0]||'',price:'',description:''};let name=prompt('Nome do item:',item.name);if(name===null)return;name=name.trim();if(!name)return;let category=prompt('Categoria ('+data.categories.join(', ')+'):',item.category)||item.category;if(!data.categories.includes(category)){alert('Cria primeiro essa categoria no botão Categorias.');return}let price=prompt('Preço (€):',item.price);if(price===null)return;price=Number(price.replace(',','.'));if(!Number.isFinite(price)||price<0){alert('Preço inválido.');return}let description=prompt('Descrição (opcional):',item.description)||'';if(id){Object.assign(item,{name,category,price,description})}else data.items.push({id:crypto.randomUUID(),name,category,price,description});save();render()}
+function deleteItem(id){if(confirm('Apagar este item do menu?')){data.items=data.items.filter(i=>i.id!==id);save();render()}}
+function renderTables(app){
+app.innerHTML=`<div class="section-head"><h2>Mesas</h2><span class="pill">${data.tables} mesas</span></div>
+<div class="form-grid"><label>Mesa selecionada<select id="tableSelect" onchange="currentTable=Number(this.value);cart={};render()">${Array.from({length:data.tables},(_,i)=>`<option value="${i+1}" ${currentTable===i+1?'selected':''}>Mesa ${i+1}</option>`).join('')}</select></label><label>Quantidade de mesas<input id="tableCount" type="number" min="1" max="100" value="${data.tables}"></label></div>
+<div class="actions"><button class="btn secondary" onclick="updateTables()">Guardar mesas</button></div>
+<div class="card" style="margin-top:16px"><div class="row"><h3>Novo pedido · Mesa ${currentTable}</h3><span class="pill">${Object.values(cart).reduce((a,b)=>a+b,0)} itens</span></div>
+${data.items.length?data.items.map(i=>`<div class="order-line"><div style="flex:1"><div class="item-name">${esc(i.name)}</div><small>${euro(i.price)}</small></div><div class="qty"><button onclick="changeQty('${i.id}',-1)">−</button><b>${cart[i.id]||0}</b><button onclick="changeQty('${i.id}',1)">+</button></div></div>`).join(''):'<div class="empty">Adiciona itens ao menu antes de registar pedidos.</div>'}
+<label>Observações do pedido<textarea id="orderNote" placeholder="Ex.: sem cebola, alergias..."></textarea></label>
+<hr><div class="row"><span>Total</span><span class="total">${euro(data.items.reduce((s,i)=>s+i.price*(cart[i.id]||0),0))}</span></div>
+<div class="actions"><button class="btn" onclick="saveOrder()">Guardar pedido</button><button class="btn ghost" onclick="cart={};render()">Limpar</button></div></div>`;
+}
+function updateTables(){let n=Number(document.getElementById('tableCount').value);if(!Number.isInteger(n)||n<1||n>100){alert('Escolhe entre 1 e 100 mesas.');return}data.tables=n;currentTable=Math.min(currentTable,n);save();render()}
+function changeQty(id,d){cart[id]=Math.max(0,(cart[id]||0)+d);if(!cart[id])delete cart[id];render()}
+function saveOrder(){let lines=data.items.filter(i=>cart[i.id]).map(i=>({itemId:i.id,name:i.name,price:i.price,qty:cart[i.id],subtotal:i.price*cart[i.id]}));if(!lines.length){alert('Adiciona pelo menos um item ao pedido.');return}let total=lines.reduce((s,l)=>s+l.subtotal,0);data.orders.unshift({id:data.nextOrder++,table:currentTable,date:new Date().toISOString(),lines,total,note:document.getElementById('orderNote').value.trim()});save();cart={};alert('Pedido guardado no histórico.');setView('history')}
+function renderHistory(app){app.innerHTML=`<div class="section-head"><h2>Histórico</h2><span class="pill">${data.orders.length} pedidos</span></div>
+${data.orders.map(o=>`<div class="card"><div class="row"><div><h3>Pedido #${o.id} · Mesa ${o.table}</h3><div class="muted">${new Date(o.date).toLocaleString('pt-PT',{dateStyle:'medium',timeStyle:'short'})}</div></div><strong class="price">${euro(o.total)}</strong></div><hr>
+${o.lines.map(l=>`<div class="row" style="margin:7px 0"><span>${l.qty} × ${esc(l.name)}</span><span>${euro(l.subtotal)}</span></div>`).join('')}
+${o.note?`<p class="muted">Nota: ${esc(o.note)}</p>`:''}
+<div class="actions"><button class="btn danger" onclick="deleteOrder(${o.id})">Apagar pedido</button></div></div>`).join('')||'<div class="empty">Ainda não existem pedidos guardados. Os pedidos registados nas mesas aparecerão aqui.</div>'}
+${data.orders.length?'<button class="btn danger" style="width:100%;margin-top:8px" onclick="clearHistory()">Apagar todo o histórico</button>':''}`}
+function deleteOrder(id){if(confirm('Apagar este pedido do histórico?')){data.orders=data.orders.filter(o=>o.id!==id);save();render()}}
+function clearHistory(){if(confirm('Apagar permanentemente todos os pedidos? O menu será mantido.')){data.orders=[];save();render()}}
+render();
+</script>
+</body></html>
